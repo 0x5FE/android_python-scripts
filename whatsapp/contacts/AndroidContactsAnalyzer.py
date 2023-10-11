@@ -62,17 +62,18 @@ def update_phone_number_to_contact_info(db_filename, normalized_term):
         conn = sqlite3.connect(db_filename)
         cursor = conn.cursor()
         cursor.execute(f"""
-            SELECT DISTINCT
-                raw_contacts.display_name AS 'Display Name',
-                phone_lookup.normalized_number AS 'Phone Number',
-                strftime('%Y-%m-%d %H:%M:%S.', "contact_last_updated_timestamp" / 1000, 'unixepoch') || ("contact_last_updated_timestamp" % 1000) AS "Last updated timestamp"
-            FROM raw_contacts
-            INNER JOIN phone_lookup ON raw_contacts._id = phone_lookup.raw_contact_id
-            INNER JOIN contacts ON raw_contacts._id = contacts.name_raw_contact_id
-            WHERE
-                raw_contacts.display_name LIKE '%{normalized_term}%'
-                OR phone_lookup.normalized_number LIKE '%{normalized_term}%'
-        """)
+            cursor.execute("""
+    SELECT DISTINCT
+        raw_contacts.display_name AS 'Display Name',
+        phone_lookup.normalized_number AS 'Phone Number',
+        strftime('%Y-%m-%d %H:%M:%S.', "contact_last_updated_timestamp" / 1000, 'unixepoch') || ("contact_last_updated_timestamp" % 1000) AS "Last updated timestamp"
+    FROM raw_contacts
+    INNER JOIN phone_lookup ON raw_contacts._id = phone_lookup.raw_contact_id
+    INNER JOIN contacts ON raw_contacts._id = contacts.name_raw_contact_id
+    WHERE
+        raw_contacts.display_name LIKE ? OR
+        phone_lookup.normalized_number LIKE ?
+    """, ('%' + normalized_term + '%', '%' + normalized_term + '%')
         rows = cursor.fetchall()
         if rows:
             for row in rows:
